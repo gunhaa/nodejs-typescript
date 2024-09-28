@@ -1,0 +1,26 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title FINAL
+        link(rel="stylesheet", href="https://unpkg.com/mvp.css")
+    body 
+        header 
+            h1 FIANL
+
+        main 
+            div#welcome
+                form
+                    input(placeholder="1번방 가라", required, type="text")
+                    button 입장
+            div#call
+                div#myStream
+                    video#MyFace(autoplay,playsinline, width="400" height="400")
+                    button#mute MUTE
+                    button#camera CAMERAOFF
+                    select#cameras
+                    video#peerFace(autoplay,playsinline, width="400" height="400")
+        script(src="/socket.io/socket.io.js")
+
+        script(src="/public/js/front.js")

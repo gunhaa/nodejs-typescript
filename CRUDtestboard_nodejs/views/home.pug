@@ -1,0 +1,17 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title USERAPI
+        link(rel="stylesheet", href="https://unpkg.com/mvp.css")
+    body 
+        header
+            h1 USERAPI
+        main 
+            form(action="/login" method="post")
+                input(type="text" placeholder="id" name="id")
+                input(type="password" placeholder="pw" name="pw")
+                button 로그인 
+        //- script(src="/socket.io/socket.io.js")
+        //- script(src="/public/js/front.js")

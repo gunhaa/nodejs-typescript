@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGIN</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+</head>
+
+<body>
+    <header>
+        <h1 id="title">LOGIN</h1>
+    </header>
+    <main>
+        <h2 id="subtitle">게시판 CRUD 만들기</h2>
+
+        <h3>대충 게시판이란 뜻</h3>
+        <table>
+            <tr>
+                <td>글번호</td>
+                <td>제목</td>
+                <td>내용</td>
+                <td>삭제</td>
+                <td>작성일</td>
+            </tr>
+            <% for(var data of item){ %>
+                <tr>
+                    <td><%= data.BOARD_NO %></td>
+                    <td><%= data.BOARD_TITLE %></td>
+                    <td><%= data.BOARD_DESCRIPTION %></td>
+                    <td><button id="<%= data.BOARD_NO %>">삭제</button></td>
+                    <td><%= data.BOARD_TIME %></td>
+                </tr>
+            <% } %>
+            <!-- <tr>
+                <td><%=item[0].BOARD_NO%></td>
+                <td><%=item[0].BOARD_TITLE%></td>
+                <td><%=item[0].BOARD_DESCRIPTION%></td>
+                <td>내가씀</td>
+                <td><%=item[0].BOARD_TIME%></td>
+            </tr>
+            <tr>
+                <td><%=item[1].BOARD_NO%></td>
+                <td><%=item[1].BOARD_TITLE%></td>
+                <td><%=item[1].BOARD_DESCRIPTION%></td>
+                <td>내가씀</td>
+                <td><%=item[1].BOARD_TIME%></td>
+            </tr>
+            <tr>
+                <td><%=item[2].BOARD_NO%></td>
+                <td><%=item[2].BOARD_TITLE%></td>
+                <td><%=item[2].BOARD_DESCRIPTION%></td>
+                <td>내가씀</td>
+                <td><%=item[2].BOARD_TIME%></td>
+            </tr> -->
+        </table>
+        <button id="write" onclick="location.href='/login/write' ">글쓰기</button>
+
+        <p>
+            접속한 아이디 : <%=user.ID%> 접속한 비밀번호 :  <%=user.PW%>
+        </p>
+    </main>
+</body>
+
+<script src="login.js"></script>
+
+</html>

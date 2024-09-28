@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kakao API TEST</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+</head>
+
+<body>
+    <h1>kakao api test</h1>
+
+    <input type="text" placeholder="리뷰 내용" id="review">
+    <button id="reviewBtn">backend로 제출하기</button>
+    <button id="frontBtn">front로 제출하기</button>
+    <div id="result">
+        <p>KOGPT의 판단</p>
+        <div id="resultSet"></div>
+    </div>
+</body>
+<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+<script src="../src/review.js"></script>
+
+</html>

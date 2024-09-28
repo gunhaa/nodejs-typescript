@@ -1,0 +1,108 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+        <title>채팅하기</title>
+    </head>
+
+    <body>
+        <h1>채팅</h1>
+        <input type="text" placeholder="아이디를 입력" id="userId">
+        <input type="text" placeholder="메시지를 보내고 싶은 아이디" id="endPointId">
+        <button id="connectButton">Connect</button>
+        <button id="sendButton">Send Message</button>
+        <button id="closeButton">Close Connection</button>
+        <button id="endPointButton">userId select</button>
+        <input type="text" placeholder="채팅을 입력해주세요" id="sendChat">
+        <div id="chatRoom"></div>
+        <script>
+            let websocket;
+            const chatRoom = document.querySelector("#chatRoom");
+            let str = chatRoom.innerHTML;
+            let members = [];
+            const wsClientId = document.querySelector("#userId");
+            let userId = "";
+            let chat = document.querySelector("#sendChat");
+            let endPointId = "";
+
+            document.getElementById('connectButton').addEventListener("click", function () {
+
+                websocket = new WebSocket('ws://localhost:8080/${contextPath}/chat/end?clientId=' + wsClientId.value);
+
+                members.push(websocket);
+
+                websocket.onopen = function (event) {
+                    console.log('Connection opened');
+                    console.log(event);
+                    str += '사용자 : ' + wsClientId.value + '님이 입장 하셨습니다. <br>';
+                    userId = wsClientId.value;
+                    chatRoom.innerHTML = str;
+                    wsClientId.value = "";
+                };
+
+                websocket.onmessage = function (event) {
+                    console.log('Received message: ' + event.data);
+                    let myMsg = JSON.parse(event.data);
+
+                    if (myMsg.fromId == userId) {
+                        console.log("난 보내는거 성공했음");
+                    } else {
+                        console.log("현재 userId : " + userId );
+                        str += myMsg.fromId + ' : ' + myMsg.message + '<br>';
+                        chatRoom.innerHTML = str;
+                        chat.value = "";
+                        console.log(event);
+                    }
+                };
+
+                websocket.onclose = function (event) {
+                    console.log('Connection closed');
+                };
+            });
+
+            document.querySelector("#sendButton").addEventListener("click", () => {
+
+
+                if (websocket) {
+
+                    let msg = {
+                        "toId": endPointId,
+                        "message": chat.value,
+                        "fromId": userId
+                    }
+
+                    let jsonMsg = JSON.stringify(msg);
+
+                    websocket.send(jsonMsg);
+
+
+                    str += userId + ' : ' + chat.value + '<br>';
+                    chatRoom.innerHTML = str;
+                    chat.value = "";
+                }
+            });
+
+            document.getElementById('closeButton').addEventListener("click", function () {
+                if (websocket) {
+                    websocket.close();
+                }
+            });
+
+            document.querySelector("#endPointButton").addEventListener("click", () => {
+
+                endPointId = document.querySelector("#endPointId").value;
+                console.log("현재 대화상대는" + endPointId + " 입니다.");
+
+            });
+
+        </script>
+    </body>
+
+    </html>
+
+

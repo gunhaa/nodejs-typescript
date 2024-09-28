@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jqueryTest</title>
+</head>
+
+<body>
+
+    <span id="hello">안녕하세요</span>
+    <button id="btn1">노란색으로</button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script>
+        $('#btn1').on('click', () =>{
+            $('#hello').css('backgroundColor', 'yellow');
+        })
+    </script>
+
+</body>
+</html>

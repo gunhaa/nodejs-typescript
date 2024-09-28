@@ -1,0 +1,285 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+	<!DOCTYPE html>
+	<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>웹소켓 테스트</title>
+	</head>
+	<style>
+
+	</style>
+
+	<body>
+		<input id="input">
+		<button id="btn"> 화상회의 연결</button>
+		<div id="conferenceRoom">
+			<video id="video1" width="300" height="300" autoplay="true"></video>
+			<video id="video2" width="300" height="300" autoplay="true"></video>
+			<video id="video3" width="300" height="300" autoplay="true"></video>
+		</div>
+		<select id="cameras"></select>
+
+	</body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.3.0/sockjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+	<script>
+		const input = document.querySelector("#input");
+		const btn = document.querySelector("#btn");
+		const conferenceRoom = document.querySelector("#conferenceRoom");
+		const video1 = document.querySelector("#video1");
+		const camerasSelect = document.getElementById("cameras");
+
+		let myPeerConnection;
+		let myStream;
+		let myDataChannel;
+
+		conferenceRoom.hidden = true;
+
+		let socket;
+
+		// btn.addEventListener("click", e=>{
+
+		//     let data = {
+		//         "msg" : input.value
+		//     }
+
+		//     socket.send(JSON.stringify(data));
+
+		//     input.value = "";
+		// });
+
+		connectWebsocket();
+		function connectWebsocket() {
+
+			socket = new SockJS("/chatting1");
+
+			socket.onmessage = async e => {
+
+				//console.log("받은거" + e);
+
+				const parsedMessage = await JSON.parse(e.data);
+
+				console.log("Received Message:", parsedMessage);
+
+				if (parsedMessage.type == "offer") {
+					// 상대방에게서 실행되는 코드
+					await handleOffer(parsedMessage);
+					console.log("handleOffer 전달됨");
+					//console.log(parsedMessage.sdp)
+				}
+				if (parsedMessage.type == "answer") {
+					await handleAnswer(parsedMessage);
+					//console.log(parsedMessage);
+					//console.log("answer 전달에 성공했음 handleAnswer 하면됨")
+				}
+
+				if (parsedMessage.hasOwnProperty("candidate")) {
+					console.log("candidate에 들어가는 그거는 이거임 : " , parsedMessage)
+					handleIceCandidate(parsedMessage);
+					//console.log(parsedMessage);
+					//console.log("candidate만 실행되는 메소드 만들기에 도달했음");
+				}
+
+
+
+				// if(parsedMessage.msg == "somebodyjoinroom"){
+				// 	console.log("원하는거 실행됬고, 이곳에서 offer 함수 실행되야함");
+				// 	makeOffer();
+				// }
+
+			}
+
+		}
+
+		if (btn) {
+			btn.addEventListener("click", startVideoConference);
+		}
+
+		// 화상회의 탭을 열고 비디오를 얻어온다.
+		async function startVideoConference() {
+		
+			conferenceRoom.hidden = false;
+			btn.hidden = true;
+			await getMedia();
+
+			// 커넥션을 만든다. 2개의 이벤트 리스너(handleIce, handleAddStream을 추가한다)
+			await makeConnection();
+
+			// OFFER를 만든다.
+			//****************************************************//
+			// 누군가가 들어왔을때만 실행되어야한다. // 방에 들어가야한다..
+			await makeOffer();
+			//socket.send(JSON.stringify({"order" : "makeOfferAllUser"}));
+
+			//***************************************************//
+			// DATA CHANNEL을 만든다.
+			//createMyDataChannel();
+			// 해당 화상회의 탭의 접속자(구독자)를 확인한다.
+		}
+
+		async function getMedia(deviceId) {
+			try {
+				// 세부 설정값이 들어가면 true로 간주한다.
+				const initialConstrains = {
+					audio: {
+						echoCancellation: true,  // 에코 제거 활성화
+						noiseSuppression: true,  // 노이즈 억제 활성화
+					},
+					// selfcam
+					video: { faceingMode: "user" }
+				}
+
+				const cameraConstraints = {
+					audio: {
+						echoCancellation: true,  // 에코 제거 활성화
+						noiseSuppression: true,  // 노이즈 억제 활성화
+					},
+					video: { deviceId: { exact: deviceId } }
+				}
+
+				myStream = await navigator.mediaDevices.getUserMedia(
+					deviceId ? cameraConstraints : initialConstrains
+				)
+
+				console.log(myStream);
+				video1.srcObject = myStream;
+
+				if (!deviceId) {
+					getCameras();
+				}
+
+			} catch (e) {
+				console.log(e);
+			}
+		}
+
+		async function getCameras() {
+
+			const devices = await navigator.mediaDevices.enumerateDevices();
+			const cameras = devices.filter(device => device.kind === "videoinput");
+			const currentCamera = myStream.getVideoTracks()[0];
+
+			cameras.forEach(camera => {
+
+				const option = document.createElement("option");
+				option.value = camera.deviceId;
+				option.innerText = camera.label;
+				if (currentCamera.label === camera.label) {
+					option.selected = true;
+				}
+				camerasSelect.appendChild(option);
+
+			});
+		}
+
+		async function makeConnection() {
+			const configuration = {
+				iceServers: [
+					{
+						urls: [
+							"stun:stun.l.google.com:19302",
+							// "stun:stun1.l.google.com:19302",
+							// "stun:stun2.l.google.com:19302",
+							// "stun:stun3.l.google.com:19302",
+							// "stun:stun4.l.google.com:19302",
+						]
+					}
+				]
+			}
+
+			myPeerConnection = new RTCPeerConnection(configuration);
+			//console.log(myPeerConnection);
+			myPeerConnection.addEventListener("icecandidate", handleIce);
+			myPeerConnection.addEventListener("addstream", handleAddStream);
+			//console.log(myStream.getTracks());
+			// 실제로 공유하는 데이터(myPeerConnection에 트랙 추가한다 오디오/비디오)
+			myStream
+				.getTracks()
+				.forEach(track => myPeerConnection.addTrack(track, myStream));
+
+
+		}
+
+		// 방에 들어갈 때 모두가 실행되어야하는 코드같음
+		async function makeOffer() {
+			const offer = await myPeerConnection.createOffer();
+			myPeerConnection.setLocalDescription(offer);
+
+			const data = {
+				"offer": JSON.stringify(offer)
+			}
+			//console.log(offer);
+			socket.send(JSON.stringify(offer));
+
+
+			//socket.send("TTT", {}, JSON.stringify({ "offer": offer }));
+			// socket.emit("offer", offer, roomName);
+			//console.log("SENT OFFER");
+		}
+
+		// offer를 제공받을때 실행되는 코드(Peer B 에서만) //양쪽에서 실행되야 하는거같음
+		async function handleOffer(offer) {
+
+			// myPeerConnection.addEventListener("datachannel", event => {
+			// 	myDataChannel = event.channel;
+			// 	myDataChannel.addEventListener("message", event => { console.log(event.data) });
+			// });
+			// 전송 방법은 console에 myDataChannel.send("msg");
+
+			//console.log("received the offer");
+			//console.log(offer);
+			myPeerConnection.setRemoteDescription(offer);
+			// 서로의 설정을 맞추기위해, 기존 로컬 설정을 바꾼다
+			const answer = await myPeerConnection.createAnswer();
+			myPeerConnection.setLocalDescription(answer);
+
+			// "answer" 이벤트를 양쪽에서 실행시켜야한다.
+			//console.log("sent answer 임시로 양쪽에서 실행되서 answer전달 했음");
+			// 해당 응답은 peer A peer B에게 전달되어야함
+			socket.send(JSON.stringify(answer));
+		}
+
+		function handleAnswer(answer) {
+			myPeerConnection.setRemoteDescription(answer);
+
+		}
+
+		// 두 브라우저가 candidate를 서로 주고받을 수 있게한다.
+		function handleIce(event) {
+
+			//console.log("sent candidate");
+			//ice는 STUN 서버를 통한 내 네트워크 경로를 
+			socket.send(JSON.stringify(event.candidate));
+			//console.log("got ice candidate");
+			//console.log(data);
+
+		}
+
+		function handleIceCandidate(iceCandidate) {
+			//console.log("received candidate");
+			myPeerConnection.addIceCandidate(iceCandidate);
+		}
+
+		function handleAddStream(event) {
+
+			const peerFace = document.querySelector("#video2");
+
+			//console.log(` my friend stream` , data.stream);
+			//console.log(` my stream : ` , myStream )
+			peerFace.srcObject = event.stream;
+			console.log('stream은 이거임' , event)
+		}
+
+
+		function check(){
+			if (myPeerConnection.remoteDescription) {
+				console.log("Remote description is set:", myPeerConnection.remoteDescription);
+			} else {
+				console.log("Remote description is not set.");
+			}
+		}
+	</script>
+
+	</html>
